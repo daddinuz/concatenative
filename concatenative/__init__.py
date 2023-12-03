@@ -1,4 +1,4 @@
-from .abstract import Concatenative
+from .abstract import Apply, Concatenative
 from .constant import Constant
 from .identity import Identity
 from .inspect import Inspect
