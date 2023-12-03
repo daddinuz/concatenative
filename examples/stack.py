@@ -111,9 +111,10 @@ def ge(stack: list[Any]) -> list[Any]:
 def ifte(stack: list[Any]) -> list[Any]:
     f = stack.pop()
     t = stack.pop()
-    stack = unquote(stack)
-    stack[-1] = t if stack[-1] else f
-    return unquote(stack)
+    c = stack.pop()
+    stack = call(stack, c)
+    quote = t if stack.pop() else f
+    return call(stack, quote)
 
 
 @wraps
@@ -155,12 +156,7 @@ def quote(stack: list[Any]) -> list[Any]:
 @wraps
 def unquote(stack: list[Any]) -> list[Any]:
     quote = stack.pop()
-    for value in quote:
-        if isinstance(value, Concatenative):
-            stack = value.apply(stack)
-        else:
-            stack.append(value)
-    return stack
+    return call(stack, quote)
 
 
 @wraps
@@ -169,41 +165,37 @@ def binrec(stack: list[Any]) -> list[Any]:
     right = stack.pop()
     left = stack.pop()
     leave = stack.pop()
-    case = stack[-1]
-    value = stack[-2]
+    case = stack.pop()
+    value = stack[-1]
+    return binrec_aux(stack, value, case, leave, left, right, merge)
 
-    stack = unquote(stack)
-    if stack[-1]:
-        stack[-1] = value
-        stack.append(leave)
-        return unquote(stack)
 
-    setup = [case, leave, left, right, merge]
+def binrec_aux(stack: list[Any], value: Any, case: list[Any], leave: list[Any], left: list[Any], right: list[Any], merge: list[Any]) -> list[Any]:
+    stack = call(stack, case)
 
+    can_leave = stack[-1]
     stack[-1] = value
-    stack.append(left)
-    stack = unquote(stack)
 
-    stack.append(case)
-    stack.append(leave)
-    stack.append(left)
-    stack.append(right)
-    stack.append(merge)
-    stack = binrec(stack)
+    if can_leave:
+        return call(stack, leave)
+    else:
+        stack = call(stack, left)
+        stack = binrec_aux(stack, stack[-1], case, leave, left, right, merge);
 
-    stack.append(value)
-    stack.append(right)
-    stack = unquote(stack)
+        stack.append(value)
+        stack = call(stack, right)
+        stack = binrec_aux(stack, stack[-1], case, leave, left, right, merge);
 
-    stack.append(case)
-    stack.append(leave)
-    stack.append(left)
-    stack.append(right)
-    stack.append(merge)
-    stack = binrec(stack)
+        return call(stack, merge)
 
-    stack.append(merge)
-    return unquote(stack)
+
+def call(stack: list[Any], code: list[Any]) -> list[Any]:
+    for value in code:
+        if isinstance(value, Concatenative):
+            stack = value.apply(stack)
+        else:
+            stack.append(value)
+    return stack
 
 
 def main():
