@@ -4,6 +4,14 @@ from typing import Any
 from concatenative import Pipe, pipe, inspect
 
 
+def apply(code: list[Any]) -> Pipe[list[Any], list[Any]]:
+    @pipe
+    def inner(stack: list[Any]) -> list[Any]:
+        return call(stack, code)
+
+    return inner
+
+
 def push(value: Any) -> Pipe[list[Any], list[Any]]:
     @pipe
     def inner(stack: list[Any]) -> list[Any]:
@@ -38,6 +46,13 @@ def mul(stack: list[Any]) -> list[Any]:
 def div(stack: list[Any]) -> list[Any]:
     r = stack.pop()
     stack[-1] /= r
+    return stack
+
+
+@pipe
+def idiv(stack: list[Any]) -> list[Any]:
+    r = stack.pop()
+    stack[-1] //= r
     return stack
 
 
@@ -189,15 +204,15 @@ def binrec_aux(
 
     if can_leave:
         return call(stack, leave)
-    else:
-        stack = call(stack, left)
-        stack = binrec_aux(stack, stack[-1], case, leave, left, right, merge)
 
-        stack.append(value)
-        stack = call(stack, right)
-        stack = binrec_aux(stack, stack[-1], case, leave, left, right, merge)
+    stack = call(stack, left)
+    stack = binrec_aux(stack, stack[-1], case, leave, left, right, merge)
 
-        return call(stack, merge)
+    stack.append(value)
+    stack = call(stack, right)
+    stack = binrec_aux(stack, stack[-1], case, leave, left, right, merge)
+
+    return call(stack, merge)
 
 
 def call(stack: list[Any], code: list[Any]) -> list[Any]:
