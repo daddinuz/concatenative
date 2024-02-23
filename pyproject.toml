@@ -12,6 +12,7 @@ license = "MIT"
 
 [tool.poetry.scripts]
 analyzer = 'scripts:analyzer'
+"--bin" = 'scripts:bin'
 "--example" = 'scripts:example'
 test = 'scripts:test'
 fmt = 'scripts:fmt'

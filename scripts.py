@@ -1,20 +1,34 @@
+import os
 import sys
-import subprocess
+
+
+def _exec(*args):
+    assert args
+    return os.execlp(args[0], *args)
 
 
 def analyzer():
     match sys.argv[1:]:
         case []:
-            subprocess.run(["pyright"])
+            _exec("pyright")
         case _:
             print("USAGE: poetry run analyzer")
+            sys.exit(1)
+
+
+def bin():
+    match sys.argv[1:]:
+        case [module]:
+            _exec("python", "-m", f"src.bins.{module}")
+        case _:
+            print("USAGE: poetry run --bin <module>")
             sys.exit(1)
 
 
 def example():
     match sys.argv[1:]:
         case [module]:
-            subprocess.run(["python", "-m", f"src.examples.{module}"])
+            _exec("python", "-m", f"src.examples.{module}")
         case _:
             print("USAGE: poetry run --example <module>")
             sys.exit(1)
@@ -23,7 +37,7 @@ def example():
 def test():
     match sys.argv[1:]:
         case []:
-            subprocess.run(["python", "-u", "-m", "unittest", "discover", "-s", "src"])
+            _exec("python", "-u", "-m", "unittest", "discover", "-s", "src")
         case _:
             print("USAGE: poetry run test")
             sys.exit(1)
@@ -32,7 +46,7 @@ def test():
 def fmt():
     match sys.argv[1:]:
         case []:
-            subprocess.run(["python", "-m", "black", "src", "scripts.py"])
+            _exec("python", "-m", "black", "src", "scripts.py")
         case _:
             print("USAGE: poetry run fmt")
             sys.exit(1)
