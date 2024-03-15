@@ -1,13 +1,13 @@
 import typing
 
 from typing import Any
-from concatenative import Pipe, pipe, inspect
+from concatenative import Pipe, pipe
 
 
 def apply(code: list[Any]) -> Pipe[list[Any], list[Any]]:
     @pipe
     def inner(stack: list[Any]) -> list[Any]:
-        return call(stack, code)
+        return _call(stack, code)
 
     return inner
 
@@ -130,9 +130,9 @@ def ifte(stack: list[Any]) -> list[Any]:
     f = stack.pop()
     t = stack.pop()
     c = stack.pop()
-    stack = call(stack, c)
+    stack = _call(stack, c)
     quote = t if stack.pop() else f
-    return call(stack, quote)
+    return _call(stack, quote)
 
 
 @pipe
@@ -174,7 +174,7 @@ def quote(stack: list[Any]) -> list[Any]:
 @pipe
 def unquote(stack: list[Any]) -> list[Any]:
     quote = stack.pop()
-    return call(stack, quote)
+    return _call(stack, quote)
 
 
 @pipe
@@ -185,10 +185,10 @@ def binrec(stack: list[Any]) -> list[Any]:
     leave = stack.pop()
     case = stack.pop()
     value = stack[-1]
-    return binrec_aux(stack, value, case, leave, left, right, merge)
+    return _binrec(stack, value, case, leave, left, right, merge)
 
 
-def binrec_aux(
+def _binrec(
     stack: list[Any],
     value: Any,
     case: list[Any],
@@ -197,45 +197,28 @@ def binrec_aux(
     right: list[Any],
     merge: list[Any],
 ) -> list[Any]:
-    stack = call(stack, case)
+    stack = _call(stack, case)
 
     can_leave = stack[-1]
     stack[-1] = value
 
     if can_leave:
-        return call(stack, leave)
+        return _call(stack, leave)
 
-    stack = call(stack, left)
-    stack = binrec_aux(stack, stack[-1], case, leave, left, right, merge)
+    stack = _call(stack, left)
+    stack = _binrec(stack, stack[-1], case, leave, left, right, merge)
 
     stack.append(value)
-    stack = call(stack, right)
-    stack = binrec_aux(stack, stack[-1], case, leave, left, right, merge)
+    stack = _call(stack, right)
+    stack = _binrec(stack, stack[-1], case, leave, left, right, merge)
 
-    return call(stack, merge)
+    return _call(stack, merge)
 
 
-def call(stack: list[Any], code: list[Any]) -> list[Any]:
+def _call(stack: list[Any], code: list[Any]) -> list[Any]:
     for value in code:
         if isinstance(value, Pipe):
             stack = typing.cast(list[Any], value(stack))
         else:
             stack.append(value)
     return stack
-
-
-def main():
-    fib = (
-        push([3, lt])
-        | push([pop, 1])
-        | push([1, sub])
-        | push([2, sub])
-        | push([add])
-        | binrec
-    )
-    program = push(30) | fib | inspect(print)
-    program([])
-
-
-if __name__ == "__main__":
-    main()
